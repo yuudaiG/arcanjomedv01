@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ArcanjoMed</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+/* IDENTIDADE VISUAL HOSPITALAR - ARCANJOMED */
+:root{
+    --azul-profundo:#0b3c5d;
+    --azul-secundario:#1d6fa5;
+    --dourado:#c9a227;
+    --verde-clinico:#2bb673;
+    --fundo:#eef3f8;
+    --branco:#ffffff;
+    --cinza:#6b7280;
+    --alerta:#e53935;
+}
+
+body{
+    margin:0;
+    font-family:'Segoe UI', Arial;
+    background:linear-gradient(135deg,#e6f0fa,#f5f9ff);
+}
+
+.app{
+    max-width:420px;
+    margin:auto;
+    min-height:100vh;
+    background:var(--fundo);
+    border-radius:25px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,0.15);
+    border: 8px solid var(--azul-profundo);
+}
+
+.header{
+    background:linear-gradient(135deg,var(--azul-profundo),var(--azul-secundario));
+    color:white;
+    padding:20px;
+    text-align:center;
+}
+
+.header h2{
+    margin:0;
+    font-weight:600;
+    letter-spacing:1px;
+    color:var(--dourado);
+    font-size: 40px;
+
+}
+
+#dataHora{
+    font-size:20px;
+    opacity:0.9;
+     margin-top: 10px;
+}
+
+.container{
+    padding:15px;
+}
+
+.card{
+    background:var(--branco);
+    border-radius:18px;
+    padding:16px;
+    margin-bottom:15px;
+    box-shadow:0 6px 15px rgba(0,0,0,0.08);
+}
+
+.card h3{
+    margin:0 0 10px 0;
+    color:var(--azul-profundo);
+    font-size:16px;
+}
+
+label{
+    display:block;
+    margin-top:10px;
+    font-weight:600;
+    color:red;
+    font-size:13px;
+    font-weight: bold;
+}
+
+input, select{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #d1d5db;
+    margin-top:6px;
+    font-size:14px;
+}
+
+.alerta{
+    border:2px solid var(--alerta) !important;
+    background:#ffecec;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    margin-top:12px;
+    border:none;
+    border-radius:12px;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+}
+
+button{
+    background:linear-gradient(135deg,var(--verde-clinico),#1e9e63);
+    color:white;
+}
+
+.sec{
+    background:linear-gradient(135deg,var(--azul-secundario),var(--azul-profundo));
+}
+
+.registro{
+    background:#f9fbfd;
+    padding:10px;
+    margin-top:10px;
+    border-radius:10px;
+    border-left:4px solid var(--azul-secundario);
+    font-size:13px;
+}
+
+#idade{
+    font-weight:bold;
+    color:var(--azul-profundo);
+}
+
+.idoso input,
+.idoso select{
+    font-size:22px;
+    padding:18px;
+}
+
+.idoso button{
+    font-size:22px;
+    padding:18px;
+}
+
+.titulo-vermelho {
+    color:red
+}  
+.separador {
+  height: 3px;
+  background: var(--cinza);
+  margin: 20px 0;
+  border-radius: 4px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app" id="app">
+
+<div class="header">
+<h2>ArcanjoMed</h2>
+<b><div id="dataHora"></div></b>
+</div>
+
+
+
+<div class="container">
+
+<button id="btnIdoso" onclick="toggleIdoso()">🧓 Aumentar Letra</button>
+
+<div class="card">
+<h3 class="titulo-vermelho">DADOS PESSOAIS</h3>
+
+<label><b>Nome</b></label>
+<input id="nome">
+
+<label><b>Data de Nascimento</b></label>
+<input type="date" id="nascimento" onchange="calcularIdade()">
+
+<div id="idade"></div>
+
+<label><b>Sexo</b></label>
+<select id="sexo">
+<option>Masculino</option>
+<option>Feminino</option>
+</select>
+
+<div style="color: red;">
+<label><b>Hospital</b></label>
+<input id="hospital">
+</div>
+
+<div class="separador"></div>
+
+<div class="card">
+<h3>INFORME AS MEDIÇÕES QUE FORAM FEITAS.</h3>
+
+<label>Sua Pressão</label>
+<input id="pressao">
+
+<label>Sua Glicemia</label>
+<input id="glicemia" type="number">
+
+<label>Sua Saturação</label>
+<input id="saturacao" type="number">
+
+<label>Seu Peso</label>
+<input id="peso" type="number">
+
+<label>Medicamento que precisa tomar</label>
+<input id="medicamento">
+<div>
+
+</div>
+
+<button onclick="salvarAfericao()">Salvar anotações</button>
+<button class="sec" onclick="gerarPDF()">Mandar para meu parente minha anotação</button>
+</div>
+
+<div class="card">
+<h3>Histórico</h3>
+<div id="historico"></div>
+</div>
+
+<div class="card">
+<h3>Gráfico</h3>
+<canvas id="grafico"></canvas>
+</div>
+
+</div>
+</div>
+
+<script>
+
+setInterval(()=>{
+document.getElementById("dataHora").innerText =
+new Date().toLocaleString();
+},1000);
+
+function toggleIdoso(){
+const app=document.getElementById("app");
+app.classList.toggle("idoso");
+}
+
+/* ✅ CORREÇÃO AQUI */
+function calcularIdade(){
+    const campo = document.getElementById("nascimento").value;
+    const idadeEl = document.getElementById("idade");
+
+    if(!campo){
+        idadeEl.innerText = "";
+        return;
+    }
+
+    const partes = campo.split("-");
+    const nasc = new Date(partes[0], partes[1] - 1, partes[2]);
+
+    const hoje = new Date();
+
+    let idade = hoje.getFullYear() - nasc.getFullYear();
+    const m = hoje.getMonth() - nasc.getMonth();
+
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) {
+        idade--;
+    }
+
+    idadeEl.innerText = "Idade: " + idade + " anos";
+}
+
+function getDB(){
+return JSON.parse(localStorage.getItem("db"))||{};
+}
+
+function setDB(db){
+localStorage.setItem("db",JSON.stringify(db));
+}
+
+function salvarPaciente(){
+let db=getDB();
+
+db["paciente"]={
+info:{
+nome:nome.value,
+nascimento:nascimento.value,
+sexo:sexo.value,
+hospital:hospital.value
+},
+historico:[]
+};
+
+setDB(db);
+carregarPaciente();
+}
+
+function carregarPaciente(){
+  let db=getDB();
+  let p=db["paciente"];
+  if(!p){
+    db["paciente"]={info:{},historico:[]};
+    setDB(db);
+    return;
+  }
+
+nome.value=p.info.nome;
+nascimento.value=p.info.nascimento;
+sexo.value=p.info.sexo;
+hospital.value=p.info.hospital;
+
+calcularIdade();
+carregarHistorico();
+atualizarGrafico();
+}
+
+function validar(){
+let [s,d]=(pressao.value||"").split("/");
+
+if(s>140||d>90) pressao.classList.add("alerta");
+else pressao.classList.remove("alerta");
+
+if(glicemia.value>180) glicemia.classList.add("alerta");
+else glicemia.classList.remove("alerta");
+
+if(saturacao.value<95) saturacao.classList.add("alerta");
+else saturacao.classList.remove("alerta");
+}
+
+function salvarAfericao(){
+validar();
+
+let db=getDB();
+let p=db["paciente"];
+if(!p)return;
+
+p.historico.unshift({
+pressao:pressao.value,
+glicemia:glicemia.value,
+saturacao:saturacao.value,
+peso:peso.value,
+medicamento:medicamento.value,
+data:new Date().toLocaleString()
+});
+
+setDB(db);
+carregarHistorico();
+atualizarGrafico();
+}
+
+function carregarHistorico(){
+let db=getDB();
+let p=db["paciente"];
+historico.innerHTML="";
+if(!p)return;
+
+p.historico.forEach((r,i)=>{
+historico.innerHTML+=`
+<div class="registro">
+${r.data}<br>
+Pressão: ${r.pressao}<br>
+Glicemia: ${r.glicemia}<br>
+Saturação: ${r.saturacao}%<br>
+Medicamento: ${r.medicamento}
+<button onclick="excluir(${i})" style="background:red;margin-top:5px;">Excluir</button>
+</div>`;
+});
+}
+
+function excluir(i){
+let db=getDB();
+db["paciente"].historico.splice(i,1);
+setDB(db);
+carregarHistorico();
+atualizarGrafico();
+}
+
+let chart;
+function atualizarGrafico(){
+let db=getDB();
+let p=db["paciente"];
+if(!p)return;
+
+let labels=p.historico.map(r=>r.data);
+let glic=p.historico.map(r=>r.glicemia);
+
+if(chart)chart.destroy();
+
+chart=new Chart(grafico,{
+type:"line",
+data:{
+labels:labels,
+datasets:[{label:"Glicemia",data:glic}]
+}
+});
+}
+
+function gerarPDF(){
+const { jsPDF }=window.jspdf;
+const doc=new jsPDF();
+
+let db=getDB();
+let p=db["paciente"];
+if(!p)return;
+
+let y=10;
+
+doc.text("PRONTUÁRIO MÉDICO",10,y); y+=10;
+
+p.historico.forEach(r=>{
+doc.text(r.data,10,y); y+=5;
+doc.text("Glicemia: "+r.glicemia,10,y);
+y+=10;
+});
+
+doc.save("prontuario.pdf");
+}
+
+carregarPaciente();
+
+</script>
+
+</body>
+</html>
